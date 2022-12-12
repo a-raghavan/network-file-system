@@ -26,7 +26,8 @@ void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
     // poll retry loop
     while (1)
     {
-        ret = UDP_Write(sd, &addrSnd, (char *)req, sizeof(req));
+        //printf("name %s, checksum %d operation %d \n", req->name, req->checksum, req->op);
+        ret = UDP_Write(sd, &addrSnd, (char *)req, sizeof(RPC_Request_t));
         
         printf("client :: sent request\n");
 
@@ -53,7 +54,7 @@ void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
             continue;
         }
 
-        ret = UDP_Read(sd, &addrRcv, (char *)res, sizeof(res));
+        ret = UDP_Read(sd, &addrRcv, (char *)res, sizeof(RPC_Response_t));
 
         printf("client :: code %d\n", res->errorCode);
 
@@ -78,7 +79,7 @@ int MFS_Init(char *hostname, int port)
         printf("can't find address\n");
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -91,7 +92,6 @@ int MFS_Lookup(int pinum, char *name)
     RPC_Request_t req;
     packRequest(&req, kLookup, pinum, 0, 0, 0, name, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
-
     RPC_Response_t res;
     sendRetry(&req, &res);
 

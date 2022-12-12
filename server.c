@@ -35,9 +35,7 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
     memcpy(name, req->name, 28);
 
     inode_t *inode = (inode_t *)((char *)fs + ((fs->inode_region_addr*UFS_BLOCK_SIZE) + (32*pinum)));
-    printf("fs = %p, inode type = %d\n", fs, inode->size);
     dir_ent_t *entry =  (dir_ent_t *)((char *)fs + inode->direct[0]*UFS_BLOCK_SIZE);
-    printf("fs = %p, direct = %d\n", fs, inode->direct[0]);
     int inum = entry->inum;
 
     packResponse(res, kSuccess, inum, NULL, 0, NULL);
@@ -60,7 +58,6 @@ int main(int argc, char *argv[]) {
     fsd = open (argv[2], O_RDWR);
     fstat (fsd, &imagestat);
     int imagesz = imagestat.st_size;
-    printf("image size = %d\n", imagesz);
     fs = (super_t *) mmap(0, imagesz, PROT_READ|PROT_WRITE, MAP_PRIVATE, fsd, 0);
 
     // start accepting requests from clients
@@ -73,14 +70,14 @@ int main(int argc, char *argv[]) {
         int rc = UDP_Read(sockd, &addr, (char *)&req, sizeof(req));
 
         // Verify checksum
-        // word16 cksm = req.checksum;
-        // req.checksum = 0;
-        // word16 calc_cksm = UDP_Checksum((byte *)&req, sizeof(req));
-        // if (calc_cksm != cksm)
-        // {
-        //     packResponse(&res, kErrorChecksumFailed, -1, NULL, 0, NULL);
-        //     goto sendresponse;
-        // }
+        word16 cksm = req.checksum;
+        req.checksum = 0;
+        word16 calc_cksm = UDP_Checksum((byte *)&req, sizeof(req));
+        if (calc_cksm != cksm)
+        {
+            packResponse(&res, kErrorChecksumFailed, -1, NULL, 0, NULL);
+            goto sendresponse;
+        }
         
         switch (req.op)
         {
