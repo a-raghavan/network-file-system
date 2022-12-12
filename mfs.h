@@ -58,9 +58,6 @@ typedef struct __RPC_Response_t {
     MFS_Stat_t stat;    // for MFS_Stat
     int nbytes;         // for MFS_Read
 
-    // reliability
-    unsigned short checksum;
-
 	// data
 	unsigned char data[4096];
 

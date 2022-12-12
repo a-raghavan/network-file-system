@@ -101,6 +101,22 @@ int MFS_Lookup(int pinum, char *name)
     return -1;
 }
 
+int MFS_Stat(int inum, MFS_Stat_t *m)
+{
+    RPC_Request_t req;
+    packRequest(&req, kStat, inum, 0, 0, 0, NULL, NULL);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+    if (res.errorCode != kSuccess)
+        return -1;
+        
+    m->size = res.stat.size;
+    m->type = res.stat.type;
+
+    return 0;
+}
+
 int MFS_Shutdown()
 {
     RPC_Request_t req;

@@ -23,7 +23,6 @@ void packResponse(RPC_Response_t *res, enum ErrorCode ec, int inum, MFS_Stat_t *
     res->stat.type = !stat ? MFS_UNDEFINED : stat->type;
     res->stat.size = !stat ? -1 : stat->size;
     res->nbytes = nbytes;
-    res->checksum = 0;
     memcpy(res->data, data, nbytes);
     return;
 }
@@ -63,6 +62,20 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
         }
     }
     packResponse(res, kErrorObjectDoesNotExist, -1, NULL, 0, NULL);
+    return;
+}
+
+void statHandler(RPC_Request_t *req, RPC_Response_t *res)
+{
+    int inum = req->inum;
+
+    // find inode entry in itable
+    inode_t *inode = inodeEntryAddress(inum);
+    MFS_Stat_t stat;
+    stat.size = inode->size;
+    stat.type = inode->type;
+
+    packResponse(res, kSuccess, -1, &stat, 0, NULL);
     return;
 }
 
@@ -114,6 +127,8 @@ int main(int argc, char *argv[]) {
                 break;
 
             case kStat:
+                statHandler(&req, &res);
+                break;
 
             case kWrite:
 

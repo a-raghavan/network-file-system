@@ -10,6 +10,10 @@ int main(int argc, char *argv[]) {
     int inum = MFS_Lookup(0, name);
     printf("inum = %d\n", inum);
 
+    MFS_Stat_t stat;
+    MFS_Stat(0, &stat);
+    printf("type %d - size %d\n", stat.type, stat.size);
+
     MFS_Shutdown();
 
     return 0;
