@@ -10,6 +10,8 @@ int main(int argc, char *argv[]) {
     int inum = MFS_Lookup(0, name);
     printf("inum = %d\n", inum);
 
+    MFS_Shutdown();
+
     return 0;
 }
 

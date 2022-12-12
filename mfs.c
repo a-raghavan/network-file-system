@@ -14,7 +14,8 @@ void packRequest(RPC_Request_t *req, enum Operation op, int inum, int offset, in
     req->nbytes = nbytes;
     req->type = type;
     req->checksum = 0;
-    memcpy(req->name, name, 28);
+    if (name)
+        memcpy(req->name, name, 28);
     memcpy(req->data, data, nbytes);
 }
 
@@ -58,7 +59,6 @@ void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
 
         printf("client :: code %d\n", res->errorCode);
 
-
         // retry operation if message to server is corrupted or out of order.
         if (res->errorCode == kErrorChecksumFailed)
             continue;
@@ -99,5 +99,16 @@ int MFS_Lookup(int pinum, char *name)
         return res.inum;
 
     return -1;
+}
+
+int MFS_Shutdown()
+{
+    RPC_Request_t req;
+    packRequest(&req, kShutdown, -1, 0, 0, 0, NULL, NULL);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+
+    return 0;
 }
 

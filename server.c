@@ -124,7 +124,8 @@ int main(int argc, char *argv[]) {
             case kUnlink:
 
             case kShutdown:
-
+                fsync(fsd);
+                
             default:
                 packResponse(&res, kSuccess, 0, NULL, 0, NULL);
 
@@ -132,6 +133,9 @@ int main(int argc, char *argv[]) {
 
         sendresponse: 
         rc = UDP_Write(sockd, &addr, (char *)&res, sizeof(res));
+
+        if (req.op == kShutdown)
+            exit(0);
 
         printf("server :: sent response\n");
     }
