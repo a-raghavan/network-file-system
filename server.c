@@ -39,6 +39,10 @@ inode_t *inodeEntryAddress(int inum)
 
 void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
+    // TODO: Handle Invalid pinum case
+    //      1. pinum > max number of Inodes
+    //      2. pinum is not allocated (inode bitmap corresponding to pinum is not set)
+    //      3. pinum < 0 ?
     int pinum = req->inum;
     char name[28];
     memcpy(name, req->name, 28);
@@ -67,6 +71,7 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 
 void statHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
+    // TODO: Handle Invalid inum case
     int inum = req->inum;
 
     // find inode entry in itable
