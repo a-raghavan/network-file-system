@@ -28,17 +28,42 @@ void packResponse(RPC_Response_t *res, enum ErrorCode ec, int inum, MFS_Stat_t *
     return;
 }
 
+inode_t *inodeEntryAddress(int inum)
+{
+    return (inode_t *)((char *)fs + ((fs->inode_region_addr*UFS_BLOCK_SIZE) + (sizeof(inode_t)*inum)));
+}
+
+ char *dataBlockAddress(int offset)
+{
+    return (char *)fs + offset*UFS_BLOCK_SIZE;
+}
+
 void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
     int pinum = req->inum;
     char name[28];
     memcpy(name, req->name, 28);
 
-    inode_t *inode = (inode_t *)((char *)fs + ((fs->inode_region_addr*UFS_BLOCK_SIZE) + (32*pinum)));
-    dir_ent_t *entry =  (dir_ent_t *)((char *)fs + inode->direct[0]*UFS_BLOCK_SIZE);
-    int inum = entry->inum;
-
-    packResponse(res, kSuccess, inum, NULL, 0, NULL);
+    // find inode entry in itable  
+    inode_t *inode = inodeEntryAddress(pinum);
+    
+    // walk through file system to check if name exists in parent directory (pinum)
+    for (int i = 0; i < DIRECT_PTRS; i++)
+    {
+        // check all data blocks of parent inode and all directory entries in each data block for 'name'
+        dir_ent_t *data_blk =  (dir_ent_t *)dataBlockAddress(inode->direct[i]);
+        for (int j = 0; j < UFS_BLOCK_SIZE/sizeof(dir_ent_t); j++)
+        {
+            dir_ent_t *entry = data_blk + j;
+            if (strcmp(entry->name, name) == 0)
+            {
+                packResponse(res, kSuccess, entry->inum, NULL, 0, NULL);
+                return;
+            }
+        }
+    }
+    packResponse(res, kErrorObjectDoesNotExist, -1, NULL, 0, NULL);
+    return;
 }
 
 // server code

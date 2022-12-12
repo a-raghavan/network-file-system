@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
     char hostname[] = "localhost";
 
     MFS_Init(hostname, 10000);
-    char name[28] = ".";
+    char name[28] = "..";
     int inum = MFS_Lookup(0, name);
     printf("inum = %d\n", inum);
 
