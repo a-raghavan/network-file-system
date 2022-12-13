@@ -104,6 +104,7 @@ void readHandler(RPC_Request_t *req, RPC_Response_t *res)
 
     inode_t *inode = inodeEntryAddress(inum);
 
+    // check for errors
     if ( (inode->type == MFS_DIRECTORY && offset % 32 != 0) || offset >= inode->size)
     {
         packResponse(res, kErrorInvalidOffset, -1, NULL, 0, NULL);
@@ -115,22 +116,21 @@ void readHandler(RPC_Request_t *req, RPC_Response_t *res)
         packResponse(res, kErrorInvalidNBytes, -1, NULL, 0, NULL);
         return;
     }
-
+    
     int first_pointer = offset/UFS_BLOCK_SIZE;
     unsigned char *p = (unsigned char *)dataBlockAddress(inode->direct[first_pointer]) + offset%UFS_BLOCK_SIZE;
     int next_pointer = first_pointer;
 
+    // copy byte by byte
     int ctr = 0;
     unsigned char data[nbytes];
     while (ctr < nbytes)
     {
-        data[ctr] = *p;
-        p++;
+        data[ctr++] = *(p++);
         if (((unsigned long long)p - (unsigned long long)dataBlockAddress(inode->direct[next_pointer])) == UFS_BLOCK_SIZE)
         {
             p = (unsigned char *)dataBlockAddress(inode->direct[++next_pointer]);
         }
-        ctr++;
     }
     
     packResponse(res, kSuccess, -1, NULL, nbytes, data);
@@ -202,14 +202,17 @@ int main(int argc, char *argv[]) {
                 break;
 
             case kWrite:
+            // TODO
 
             case kRead:
                 readHandler(&req, &res);
                 break;
 
             case kCreat:
+            // TODO
 
             case kUnlink:
+            // TODO
 
             case kShutdown:
                 fsync(fsd);
