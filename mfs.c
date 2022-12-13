@@ -67,9 +67,10 @@ void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
     }
 }
 
-
 int MFS_Init(char *hostname, int port)
 {
+    if (!hostname || port < 0 || port > 65535)
+        return -1;
     // client socket
     sd = UDP_Open(20000);
 
@@ -86,7 +87,7 @@ int MFS_Init(char *hostname, int port)
 int MFS_Lookup(int pinum, char *name)
 {
     // name length too long
-    if (strlen(name) > 27)
+    if (!name || strlen(name) > 27 || pinum < 0)
         return -1;
     
     RPC_Request_t req;
@@ -103,6 +104,9 @@ int MFS_Lookup(int pinum, char *name)
 
 int MFS_Stat(int inum, MFS_Stat_t *m)
 {
+    if (inum < 0 || !m)
+        return -1;
+
     RPC_Request_t req;
     packRequest(&req, kStat, inum, 0, 0, MFS_UNDEFINED, NULL, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
@@ -119,6 +123,12 @@ int MFS_Stat(int inum, MFS_Stat_t *m)
 
 int MFS_Write(int inum, char *buffer, int offset, int nbytes)
 {
+    if (inum < 0 || offset < 0 || nbytes < 0 || nbytes > 4096)
+        return -1;
+    
+    if (nbytes == 0)
+        return 0;
+
     RPC_Request_t req;
     packRequest(&req, kWrite, inum, offset, nbytes, MFS_UNDEFINED, NULL, (unsigned char *)buffer);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
@@ -132,6 +142,12 @@ int MFS_Write(int inum, char *buffer, int offset, int nbytes)
 
 int MFS_Read(int inum, char *buffer, int offset, int nbytes)
 {
+    if (inum < 0 || !buffer || offset < 0 || nbytes < 0 || nbytes > 4096)
+        return -1;
+
+    if (nbytes == 0)
+        return 0;
+    
     RPC_Request_t req;
     packRequest(&req, kRead, inum, offset, nbytes, MFS_UNDEFINED, NULL, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
@@ -145,8 +161,12 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes)
     return 0;
     
 }
+
 int MFS_Creat(int pinum, int type, char *name)
 {
+    if (pinum < 0 || type > 1 || type < 0 || !name || strlen(name) > 27)
+        return -1;
+    
     RPC_Request_t req;
     packRequest(&req, kCreat, pinum, 0, 0, type, name, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
@@ -160,6 +180,8 @@ int MFS_Creat(int pinum, int type, char *name)
 
 int MFS_Unlink(int pinum, char *name)
 {
+    if (pinum < 0 || !name || strlen(name) > 27)
+        return -1;
     RPC_Request_t req;
     packRequest(&req, kUnlink, pinum, 0, 0, MFS_UNDEFINED, name, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));

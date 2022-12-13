@@ -32,7 +32,7 @@ inode_t *inodeEntryAddress(int inum)
     return (inode_t *)((char *)fs + ((fs->inode_region_addr*UFS_BLOCK_SIZE) + (sizeof(inode_t)*inum)));
 }
 
- char *dataBlockAddress(int offset)
+char *dataBlockAddress(int offset)
 {
     return (char *)fs + offset*UFS_BLOCK_SIZE;
 }
