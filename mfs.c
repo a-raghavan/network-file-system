@@ -90,7 +90,7 @@ int MFS_Lookup(int pinum, char *name)
         return -1;
     
     RPC_Request_t req;
-    packRequest(&req, kLookup, pinum, 0, 0, 0, name, NULL);
+    packRequest(&req, kLookup, pinum, 0, 0, MFS_UNDEFINED, name, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
     RPC_Response_t res;
     sendRetry(&req, &res);
@@ -104,7 +104,7 @@ int MFS_Lookup(int pinum, char *name)
 int MFS_Stat(int inum, MFS_Stat_t *m)
 {
     RPC_Request_t req;
-    packRequest(&req, kStat, inum, 0, 0, 0, NULL, NULL);
+    packRequest(&req, kStat, inum, 0, 0, MFS_UNDEFINED, NULL, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
     RPC_Response_t res;
     sendRetry(&req, &res);
@@ -117,10 +117,64 @@ int MFS_Stat(int inum, MFS_Stat_t *m)
     return 0;
 }
 
+int MFS_Write(int inum, char *buffer, int offset, int nbytes)
+{
+    RPC_Request_t req;
+    packRequest(&req, kWrite, inum, offset, nbytes, MFS_UNDEFINED, NULL, (unsigned char *)buffer);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+
+    if (res.errorCode != kSuccess)
+        return -1;
+    return 0;
+}
+
+int MFS_Read(int inum, char *buffer, int offset, int nbytes)
+{
+    RPC_Request_t req;
+    packRequest(&req, kRead, inum, offset, nbytes, MFS_UNDEFINED, NULL, NULL);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+    
+    if (res.errorCode != kSuccess)
+        return -1;
+
+    memcpy(buffer, res.data, nbytes);
+    return 0;
+    
+}
+int MFS_Creat(int pinum, int type, char *name)
+{
+    RPC_Request_t req;
+    packRequest(&req, kCreat, pinum, 0, 0, type, name, NULL);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+
+    if (res.errorCode != kSuccess)
+        return -1;
+    return 0;
+}
+
+int MFS_Unlink(int pinum, char *name)
+{
+    RPC_Request_t req;
+    packRequest(&req, kUnlink, pinum, 0, 0, MFS_UNDEFINED, name, NULL);
+    req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
+    RPC_Response_t res;
+    sendRetry(&req, &res);
+
+    if (res.errorCode != kSuccess)
+        return -1;
+    return 0;
+}
+
 int MFS_Shutdown()
 {
     RPC_Request_t req;
-    packRequest(&req, kShutdown, -1, 0, 0, 0, NULL, NULL);
+    packRequest(&req, kShutdown, -1, 0, 0, MFS_UNDEFINED, NULL, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
     RPC_Response_t res;
     sendRetry(&req, &res);

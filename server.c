@@ -111,6 +111,12 @@ int main(int argc, char *argv[]) {
 
         // Wait for request
         int rc = UDP_Read(sockd, &addr, (char *)&req, sizeof(req));
+        if (rc != sizeof(req))
+        {
+            // data received is incomplete
+            packResponse(&res, kErrorChecksumFailed, -1, NULL, 0, NULL);
+            goto sendresponse;
+        }
 
         // Verify checksum
         word16 cksm = req.checksum;
