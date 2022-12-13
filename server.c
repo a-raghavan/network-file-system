@@ -40,8 +40,8 @@ char *dataBlockAddress(int offset)
 int isInumValid(int inum)
 {
     int nInodes = fs->inode_region_len*UFS_BLOCK_SIZE/sizeof(inode_t);
-    if (inum >= nInodes)
-        return -1;  
+    if (inum < 0 || inum >= nInodes)
+        return -1;
     unsigned char *inodeBitmapAddr = (unsigned char *)fs + fs->inode_bitmap_addr*UFS_BLOCK_SIZE;
     unsigned char *t = inodeBitmapAddr + (int)(inum/8);
     unsigned char mask = (1<<(8-inum%8));
@@ -56,21 +56,19 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
     char name[28];
     memcpy(name, req->name, 28);
 
-    if (isInumValid(pinum) == -1)
-    {
-        packResponse(res, kErrorInvalidInum, -1, NULL, 0, NULL);
-        return;
-    }
-
     // find inode entry in itable  
     inode_t *inode = inodeEntryAddress(pinum);
+
+    int numBlocks = inode->size/UFS_BLOCK_SIZE + 1;
     
     // walk through file system to check if name exists in parent directory (pinum)
-    for (int i = 0; i < DIRECT_PTRS; i++)
+    for (int i = 0; i < numBlocks; i++)
     {
         // check all data blocks of parent inode and all directory entries in each data block for 'name'
-        dir_ent_t *data_blk =  (dir_ent_t *)dataBlockAddress(inode->direct[i]);
-        for (int j = 0; j < UFS_BLOCK_SIZE/sizeof(dir_ent_t); j++)
+        dir_ent_t *data_blk = (dir_ent_t *)dataBlockAddress(inode->direct[i]);
+
+        int numEntries = (i == numBlocks-1) ? (inode->size%UFS_BLOCK_SIZE)/sizeof(dir_ent_t) : UFS_BLOCK_SIZE/sizeof(dir_ent_t);
+        for (int j = 0; j < numEntries; j++)
         {
             dir_ent_t *entry = data_blk + j;
             if (strcmp(entry->name, name) == 0)
@@ -87,11 +85,6 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 void statHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
     int inum = req->inum;
-    if (isInumValid(inum) == -1)
-    {
-        packResponse(res, kErrorInvalidInum, -1, NULL, 0, NULL);
-        return;
-    }
 
     // find inode entry in itable
     inode_t *inode = inodeEntryAddress(inum);
@@ -144,6 +137,13 @@ int main(int argc, char *argv[]) {
         if (calc_cksm != cksm)
         {
             packResponse(&res, kErrorChecksumFailed, -1, NULL, 0, NULL);
+            goto sendresponse;
+        }
+
+        // verify input checksum
+        if (isInumValid(req.inum) == -1)
+        {
+            packResponse(&res, kErrorInvalidInum, -1, NULL, 0, NULL);
             goto sendresponse;
         }
         
