@@ -96,6 +96,47 @@ void statHandler(RPC_Request_t *req, RPC_Response_t *res)
     return;
 }
 
+void readHandler(RPC_Request_t *req, RPC_Response_t *res)
+{
+    int inum = req->inum;
+    int offset = req->offset;
+    int nbytes = req->nbytes;
+
+    inode_t *inode = inodeEntryAddress(inum);
+
+    if ( (inode->type == MFS_DIRECTORY && offset % 32 != 0) || offset >= inode->size)
+    {
+        packResponse(res, kErrorInvalidOffset, -1, NULL, 0, NULL);
+        return;
+    }
+
+    if (offset + nbytes > inode->size)
+    {
+        packResponse(res, kErrorInvalidNBytes, -1, NULL, 0, NULL);
+        return;
+    }
+
+    int first_pointer = offset/UFS_BLOCK_SIZE;
+    unsigned char *p = (unsigned char *)dataBlockAddress(inode->direct[first_pointer]) + offset%UFS_BLOCK_SIZE;
+    int next_pointer = first_pointer;
+
+    int ctr = 0;
+    unsigned char data[nbytes];
+    while (ctr < nbytes)
+    {
+        data[ctr] = *p;
+        p++;
+        if (((unsigned long long)p - (unsigned long long)dataBlockAddress(inode->direct[next_pointer])) == UFS_BLOCK_SIZE)
+        {
+            p = (unsigned char *)dataBlockAddress(inode->direct[++next_pointer]);
+        }
+        ctr++;
+    }
+    
+    packResponse(res, kSuccess, -1, NULL, nbytes, data);
+    return;
+}
+
 // server code
 int main(int argc, char *argv[]) {
     if (argc != 3)
@@ -163,6 +204,8 @@ int main(int argc, char *argv[]) {
             case kWrite:
 
             case kRead:
+                readHandler(&req, &res);
+                break;
 
             case kCreat:
 

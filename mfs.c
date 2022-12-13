@@ -16,7 +16,8 @@ void packRequest(RPC_Request_t *req, enum Operation op, int inum, int offset, in
     req->checksum = 0;
     if (name)
         memcpy(req->name, name, 28);
-    memcpy(req->data, data, nbytes);
+    if (data)
+        memcpy(req->data, data, nbytes);
 }
 
 void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
@@ -153,7 +154,7 @@ int MFS_Read(int inum, char *buffer, int offset, int nbytes)
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
     RPC_Response_t res;
     sendRetry(&req, &res);
-    
+
     if (res.errorCode != kSuccess)
         return -1;
 
@@ -196,7 +197,7 @@ int MFS_Unlink(int pinum, char *name)
 int MFS_Shutdown()
 {
     RPC_Request_t req;
-    packRequest(&req, kShutdown, -1, 0, 0, MFS_UNDEFINED, NULL, NULL);
+    packRequest(&req, kShutdown, 0, 0, 0, MFS_UNDEFINED, NULL, NULL);
     req.checksum = UDP_Checksum((byte *)&req, sizeof(req));
     RPC_Response_t res;
     sendRetry(&req, &res);
