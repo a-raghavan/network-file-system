@@ -37,15 +37,30 @@ char *dataBlockAddress(int offset)
     return (char *)fs + offset*UFS_BLOCK_SIZE;
 }
 
+int isInumValid(int inum)
+{
+    int nInodes = fs->inode_region_len*UFS_BLOCK_SIZE/sizeof(inode_t);
+    if (inum >= nInodes)
+        return -1;  
+    unsigned char *inodeBitmapAddr = (unsigned char *)fs + fs->inode_bitmap_addr*UFS_BLOCK_SIZE;
+    unsigned char *t = inodeBitmapAddr + (int)(inum/8);
+    unsigned char mask = (1<<(8-inum%8));
+    if ((*t & mask) == mask)
+        return 0;
+    return -1;
+}
+
 void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
-    // TODO: Handle Invalid pinum case
-    //      1. pinum > max number of Inodes
-    //      2. pinum is not allocated (inode bitmap corresponding to pinum is not set)
-    //      3. pinum < 0 ?
     int pinum = req->inum;
     char name[28];
     memcpy(name, req->name, 28);
+
+    if (isInumValid(pinum) == -1)
+    {
+        packResponse(res, kErrorInvalidInum, -1, NULL, 0, NULL);
+        return;
+    }
 
     // find inode entry in itable  
     inode_t *inode = inodeEntryAddress(pinum);
@@ -71,8 +86,12 @@ void lookupHandler(RPC_Request_t *req, RPC_Response_t *res)
 
 void statHandler(RPC_Request_t *req, RPC_Response_t *res)
 {
-    // TODO: Handle Invalid inum case
     int inum = req->inum;
+    if (isInumValid(inum) == -1)
+    {
+        packResponse(res, kErrorInvalidInum, -1, NULL, 0, NULL);
+        return;
+    }
 
     // find inode entry in itable
     inode_t *inode = inodeEntryAddress(inum);
