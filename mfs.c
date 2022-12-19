@@ -5,7 +5,7 @@
 #include "udp.h"
 
 // Copy-On-Write globals
-int sd;
+int sd = -1;
 struct sockaddr_in addrSnd;
 
 void packRequest(RPC_Request_t *req, enum Operation op, int inum, int offset, int nbytes, int type, char *name, unsigned char *data)
@@ -37,10 +37,9 @@ void sendRetry(RPC_Request_t *req, RPC_Response_t *res)
 
         if (ret < 0) {
             printf("client:: failed to send\n");
-            exit(1);
         }
         
-        struct pollfd fds[2];
+        struct pollfd fds[1];
 
         fds[0].fd = sd;
         fds[0].events = POLLIN;
@@ -75,6 +74,9 @@ int MFS_Init(char *hostname, int port)
     if (!hostname || port < 0 || port > 65535)
         return -1;
 
+    if (sd > 0)
+        return 0;
+        
     // client socket
     int MIN_PORT = 20000;
     int MAX_PORT = 40000;

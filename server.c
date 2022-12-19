@@ -450,6 +450,7 @@ int main(int argc, char *argv[]) {
                 break;
 
             case kShutdown:
+                packResponse(&res, kSuccess, -1, NULL, 0, NULL);
                 fsync(fsd);
                 
             default:
