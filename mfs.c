@@ -73,7 +73,7 @@ int MFS_Init(char *hostname, int port)
     if (!hostname || port < 0 || port > 65535)
         return -1;
     // client socket
-    sd = UDP_Open(20000);
+    sd = UDP_Open(20039);
 
     // bind server socket address
     if (UDP_FillSockAddr(&addrSnd, hostname, port) == -1)
