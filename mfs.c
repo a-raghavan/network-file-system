@@ -1,4 +1,6 @@
 #include <poll.h>
+#include <time.h>
+#include <stdlib.h>
 #include "mfs.h"
 #include "udp.h"
 
@@ -72,8 +74,14 @@ int MFS_Init(char *hostname, int port)
 {
     if (!hostname || port < 0 || port > 65535)
         return -1;
+
     // client socket
-    sd = UDP_Open(20039);
+    int MIN_PORT = 20000;
+    int MAX_PORT = 40000;
+
+    srand(time(0));
+    int port_num = (rand() % (MAX_PORT - MIN_PORT) + MIN_PORT);
+    sd = UDP_Open(port_num);
 
     // bind server socket address
     if (UDP_FillSockAddr(&addrSnd, hostname, port) == -1)
